@@ -78,6 +78,7 @@ export class AdminEscolasService {
       return {
         id: escola.id,
         nome: escola.nome,
+        whatsapp: escola.whatsapp,
         limiteCoreografias: escola.limiteCoreografias,
         bailarinosCadastrados: escola.bailarinos.length,
         coreografiasCadastradas: escola.coreografias.length,
@@ -99,6 +100,7 @@ export class AdminEscolasService {
       return {
         id: independente.id,
         nome: independente.nomeResponsavel,
+        whatsapp: independente.whatsapp,
         limiteCoreografias: independente.limiteCoreografias,
         bailarinosCadastrados: independente.bailarinos.length,
         coreografiasCadastradas: independente.coreografias.length,
