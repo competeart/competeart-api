@@ -34,7 +34,6 @@ export const criarCoreografiaSchema = {
           "DANCAS_URBANAS",
           "SAPATEADO",
           "ESTILO_LIVRE",
-          "OUTROS",
         ],
       },
       categoria: {
@@ -73,4 +72,3 @@ export const listarCoreografiasSchema = {
     },
   },
 };
-

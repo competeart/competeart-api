@@ -37,7 +37,6 @@ exports.criarCoreografiaSchema = {
                     "DANCAS_URBANAS",
                     "SAPATEADO",
                     "ESTILO_LIVRE",
-                    "OUTROS",
                 ],
             },
             categoria: {
