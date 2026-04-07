@@ -16,7 +16,8 @@ class BailarinoService {
             data: {
                 nomeCompleto: data.nomeCompleto,
                 nomeArtistico: data.nomeArtistico,
-                cpf: data.cpf,
+                tipoDocumento: data.tipoDocumento,
+                documento: data.documento,
                 dataNascimento: new Date(data.dataNascimento),
                 escolaId: data.escolaId,
                 independenteId: null,
@@ -34,7 +35,8 @@ class BailarinoService {
             data: {
                 nomeCompleto: data.nomeCompleto,
                 nomeArtistico: data.nomeArtistico,
-                cpf: data.cpf,
+                tipoDocumento: data.tipoDocumento,
+                documento: data.documento,
                 dataNascimento: new Date(data.dataNascimento),
                 escolaId: null,
                 independenteId: data.independenteId,

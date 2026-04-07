@@ -55,7 +55,8 @@ model Bailarino {
   id             String                 @id @default(uuid())
   nomeCompleto   String
   nomeArtistico  String
-  cpf            String                 @unique
+  tipoDocumento  TipoDocumento          @default(CPF)
+  documento      String                 @unique
   dataNascimento DateTime
 
   escolaId       String?
@@ -108,6 +109,11 @@ model CoreografiaBailarino {
 enum FuncaoProfissional {
   COREOGRAFO
   ASSISTENTE
+}
+
+enum TipoDocumento {
+  CPF
+  RG
 }
 
 enum Formacao {

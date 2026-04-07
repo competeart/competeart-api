@@ -20,7 +20,7 @@ async function criarBailarinoController(app, request, reply) {
             return;
         }
         if (error.code === "P2002") {
-            reply.code(409).send({ message: "CPF já cadastrado" });
+            reply.code(409).send({ message: "Documento já cadastrado" });
             return;
         }
         throw error;
@@ -41,7 +41,7 @@ async function criarBailarinoIndependenteController(app, request, reply) {
             return;
         }
         if (error.code === "P2002") {
-            reply.code(409).send({ message: "CPF já cadastrado" });
+            reply.code(409).send({ message: "Documento já cadastrado" });
             return;
         }
         throw error;

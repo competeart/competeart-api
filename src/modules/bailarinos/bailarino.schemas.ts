@@ -8,11 +8,12 @@ export const criarBailarinoSchema = {
   },
   body: {
     type: "object",
-    required: ["nomeCompleto", "nomeArtistico", "cpf", "dataNascimento"],
+    required: ["nomeCompleto", "nomeArtistico", "tipoDocumento", "documento", "dataNascimento"],
     properties: {
       nomeCompleto: { type: "string", minLength: 1 },
       nomeArtistico: { type: "string", minLength: 1 },
-      cpf: { type: "string", minLength: 11 },
+      tipoDocumento: { enum: ["CPF", "RG"] },
+      documento: { type: "string", minLength: 7 },
       dataNascimento: { type: "string", format: "date" },
     },
   },
