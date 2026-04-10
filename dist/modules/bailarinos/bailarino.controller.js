@@ -19,10 +19,6 @@ async function criarBailarinoController(app, request, reply) {
             reply.code(404).send({ message: "Escola não encontrada" });
             return;
         }
-        if (error.code === "P2002") {
-            reply.code(409).send({ message: "Documento já cadastrado" });
-            return;
-        }
         throw error;
     }
 }
@@ -38,10 +34,6 @@ async function criarBailarinoIndependenteController(app, request, reply) {
     catch (error) {
         if (error.message === "INDEPENDENTE_NAO_ENCONTRADO") {
             reply.code(404).send({ message: "Inscrição independente não encontrada" });
-            return;
-        }
-        if (error.code === "P2002") {
-            reply.code(409).send({ message: "Documento já cadastrado" });
             return;
         }
         throw error;

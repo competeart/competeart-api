@@ -21,11 +21,6 @@ export async function criarBailarinoController(
       return;
     }
 
-    if (error.code === "P2002") {
-      reply.code(409).send({ message: "Documento já cadastrado" });
-      return;
-    }
-
     throw error;
   }
 }
@@ -47,11 +42,6 @@ export async function criarBailarinoIndependenteController(
   } catch (error: any) {
     if (error.message === "INDEPENDENTE_NAO_ENCONTRADO") {
       reply.code(404).send({ message: "Inscrição independente não encontrada" });
-      return;
-    }
-
-    if (error.code === "P2002") {
-      reply.code(409).send({ message: "Documento já cadastrado" });
       return;
     }
 

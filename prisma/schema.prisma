@@ -56,7 +56,7 @@ model Bailarino {
   nomeCompleto   String
   nomeArtistico  String
   tipoDocumento  TipoDocumento          @default(CPF)
-  documento      String                 @unique
+  documento      String
   dataNascimento DateTime
 
   escolaId       String?
