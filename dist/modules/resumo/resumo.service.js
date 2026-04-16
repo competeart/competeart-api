@@ -1,24 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ResumoService = void 0;
-const client_1 = require("@prisma/client");
+const lotes_1 = require("../../lib/lotes");
 class ResumoService {
     constructor(prisma) {
         this.prisma = prisma;
-    }
-    calcularValorCoreografia(formacao, qtdBailarinos) {
-        switch (formacao) {
-            case client_1.Formacao.SOLO:
-                return 160;
-            case client_1.Formacao.DUO:
-                return 220;
-            case client_1.Formacao.TRIO:
-                return 320;
-            case client_1.Formacao.GRUPO:
-                return qtdBailarinos * 80;
-            default:
-                return 0;
-        }
     }
     async gerar(escolaId) {
         const escola = await this.prisma.escola.findUnique({
@@ -43,7 +29,7 @@ class ResumoService {
         const valorProfissionaisExtras = profissionaisExtras * 70;
         let valorCoreografias = 0;
         const coreografiasDetalhe = escola.coreografias.map((c) => {
-            const valor = this.calcularValorCoreografia(c.formacao, c.bailarinos.length);
+            const valor = (0, lotes_1.calcularValorCoreografia)(c.formacao, c.bailarinos.length);
             valorCoreografias += valor;
             return {
                 id: c.id,
@@ -116,7 +102,7 @@ class ResumoService {
         }
         let valorCoreografias = 0;
         const coreografiasDetalhe = inscricao.coreografias.map((c) => {
-            const valor = this.calcularValorCoreografia(c.formacao, c.bailarinos.length);
+            const valor = (0, lotes_1.calcularValorCoreografia)(c.formacao, c.bailarinos.length);
             valorCoreografias += valor;
             return {
                 id: c.id,

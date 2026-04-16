@@ -1,4 +1,5 @@
 import { PrismaClient, Formacao } from "@prisma/client";
+import { calcularValorCoreografia } from "../../lib/lotes";
 
 interface CriarCoreografiaInput {
   escolaId?: string;
@@ -58,21 +59,6 @@ export class CoreografiaService {
 
     if (count !== bailarinosIds.length) {
       throw new Error("BAILARINO_INVALIDO");
-    }
-  }
-
-  private calcularValor(formacao: Formacao, quantidadeBailarinos: number) {
-    switch (formacao) {
-      case "SOLO":
-        return 160;
-      case "DUO":
-        return 220;
-      case "TRIO":
-        return 320;
-      case "GRUPO":
-        return quantidadeBailarinos * 80;
-      default:
-        return 0;
     }
   }
 
@@ -206,7 +192,7 @@ export class CoreografiaService {
       duracao: c.duracao,
       musica: c.musica,
       temCenario: c.temCenario,
-      valor: this.calcularValor(c.formacao, c.bailarinos.length),
+      valor: calcularValorCoreografia(c.formacao, c.bailarinos.length),
       listaBailarinos: c.bailarinos.map((b) => b.bailarino),
     }));
   }
@@ -248,7 +234,7 @@ export class CoreografiaService {
       duracao: c.duracao,
       musica: c.musica,
       temCenario: c.temCenario,
-      valor: this.calcularValor(c.formacao, c.bailarinos.length),
+      valor: calcularValorCoreografia(c.formacao, c.bailarinos.length),
       listaBailarinos: c.bailarinos.map((b) => b.bailarino),
     }));
   }

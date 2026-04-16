@@ -1,4 +1,5 @@
 import { PrismaClient, Formacao } from "@prisma/client";
+import { calcularValorCoreografia } from "../lib/lotes";
 
 export class AdminEscolasService {
   constructor(private prisma: PrismaClient) {}
@@ -19,22 +20,10 @@ export class AdminEscolasService {
     let valorCoreografias = 0;
 
     coreografias.forEach((c) => {
-      const qtd = c.bailarinos.length;
-
-      switch (c.formacao) {
-        case Formacao.SOLO:
-          valorCoreografias += 160;
-          break;
-        case Formacao.DUO:
-          valorCoreografias += 220;
-          break;
-        case Formacao.TRIO:
-          valorCoreografias += 320;
-          break;
-        case Formacao.GRUPO:
-          valorCoreografias += qtd * 80;
-          break;
-      }
+      valorCoreografias += calcularValorCoreografia(
+        c.formacao,
+        c.bailarinos.length,
+      );
     });
 
     return valorCoreografias;

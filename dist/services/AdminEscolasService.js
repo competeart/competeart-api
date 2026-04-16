@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AdminEscolasService = void 0;
-const client_1 = require("@prisma/client");
+const lotes_1 = require("../lib/lotes");
 class AdminEscolasService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -16,21 +16,7 @@ class AdminEscolasService {
     calcularValorCoreografias(coreografias) {
         let valorCoreografias = 0;
         coreografias.forEach((c) => {
-            const qtd = c.bailarinos.length;
-            switch (c.formacao) {
-                case client_1.Formacao.SOLO:
-                    valorCoreografias += 160;
-                    break;
-                case client_1.Formacao.DUO:
-                    valorCoreografias += 220;
-                    break;
-                case client_1.Formacao.TRIO:
-                    valorCoreografias += 320;
-                    break;
-                case client_1.Formacao.GRUPO:
-                    valorCoreografias += qtd * 80;
-                    break;
-            }
+            valorCoreografias += (0, lotes_1.calcularValorCoreografia)(c.formacao, c.bailarinos.length);
         });
         return valorCoreografias;
     }

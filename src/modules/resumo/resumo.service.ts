@@ -1,22 +1,8 @@
-import { PrismaClient, Formacao } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
+import { calcularValorCoreografia } from "../../lib/lotes";
 
 export class ResumoService {
   constructor(private prisma: PrismaClient) {}
-
-  private calcularValorCoreografia(formacao: Formacao, qtdBailarinos: number) {
-    switch (formacao) {
-      case Formacao.SOLO:
-        return 160;
-      case Formacao.DUO:
-        return 220;
-      case Formacao.TRIO:
-        return 320;
-      case Formacao.GRUPO:
-        return qtdBailarinos * 80;
-      default:
-        return 0;
-    }
-  }
 
   async gerar(escolaId: string) {
     const escola = await this.prisma.escola.findUnique({
@@ -45,7 +31,7 @@ export class ResumoService {
     let valorCoreografias = 0;
 
     const coreografiasDetalhe = escola.coreografias.map((c) => {
-      const valor = this.calcularValorCoreografia(c.formacao, c.bailarinos.length);
+      const valor = calcularValorCoreografia(c.formacao, c.bailarinos.length);
       valorCoreografias += valor;
 
       return {
@@ -124,7 +110,7 @@ export class ResumoService {
     let valorCoreografias = 0;
 
     const coreografiasDetalhe = inscricao.coreografias.map((c) => {
-      const valor = this.calcularValorCoreografia(c.formacao, c.bailarinos.length);
+      const valor = calcularValorCoreografia(c.formacao, c.bailarinos.length);
       valorCoreografias += valor;
 
       return {

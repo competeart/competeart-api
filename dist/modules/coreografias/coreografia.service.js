@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CoreografiaService = void 0;
+const lotes_1 = require("../../lib/lotes");
 class CoreografiaService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -39,20 +40,6 @@ class CoreografiaService {
         });
         if (count !== bailarinosIds.length) {
             throw new Error("BAILARINO_INVALIDO");
-        }
-    }
-    calcularValor(formacao, quantidadeBailarinos) {
-        switch (formacao) {
-            case "SOLO":
-                return 160;
-            case "DUO":
-                return 220;
-            case "TRIO":
-                return 320;
-            case "GRUPO":
-                return quantidadeBailarinos * 80;
-            default:
-                return 0;
         }
     }
     async criarPorEscola(data) {
@@ -163,7 +150,7 @@ class CoreografiaService {
             duracao: c.duracao,
             musica: c.musica,
             temCenario: c.temCenario,
-            valor: this.calcularValor(c.formacao, c.bailarinos.length),
+            valor: (0, lotes_1.calcularValorCoreografia)(c.formacao, c.bailarinos.length),
             listaBailarinos: c.bailarinos.map((b) => b.bailarino),
         }));
     }
@@ -201,7 +188,7 @@ class CoreografiaService {
             duracao: c.duracao,
             musica: c.musica,
             temCenario: c.temCenario,
-            valor: this.calcularValor(c.formacao, c.bailarinos.length),
+            valor: (0, lotes_1.calcularValorCoreografia)(c.formacao, c.bailarinos.length),
             listaBailarinos: c.bailarinos.map((b) => b.bailarino),
         }));
     }
