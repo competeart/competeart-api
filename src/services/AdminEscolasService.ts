@@ -16,6 +16,7 @@ export class AdminEscolasService {
 
   private calcularValorCoreografias(
     coreografias: Array<{ formacao: Formacao; bailarinos: Array<any> }>,
+    dataInscricao: Date,
   ) {
     let valorCoreografias = 0;
 
@@ -23,6 +24,7 @@ export class AdminEscolasService {
       valorCoreografias += calcularValorCoreografia(
         c.formacao,
         c.bailarinos.length,
+        dataInscricao,
       );
     });
 
@@ -57,7 +59,10 @@ export class AdminEscolasService {
     const inscricoesEscola = escolas.map((escola) => {
       const profissionaisExtras = Math.max(0, escola.profissionais.length - 2);
       const valorProfissionaisExtras = profissionaisExtras * 70;
-      const valorCoreografias = this.calcularValorCoreografias(escola.coreografias);
+      const valorCoreografias = this.calcularValorCoreografias(
+        escola.coreografias,
+        escola.criadoEm,
+      );
 
       const total = valorCoreografias + valorProfissionaisExtras;
       const status = this.calcularStatusPorEtapas(
@@ -83,6 +88,7 @@ export class AdminEscolasService {
     const inscricoesIndependentes = independentes.map((independente) => {
       const valorCoreografias = this.calcularValorCoreografias(
         independente.coreografias,
+        independente.criadoEm,
       );
       const status = this.calcularStatusPorEtapas(
         independente.bailarinos.length > 0,

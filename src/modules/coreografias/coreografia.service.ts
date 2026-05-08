@@ -192,7 +192,11 @@ export class CoreografiaService {
       duracao: c.duracao,
       musica: c.musica,
       temCenario: c.temCenario,
-      valor: calcularValorCoreografia(c.formacao, c.bailarinos.length),
+      valor: calcularValorCoreografia(
+        c.formacao,
+        c.bailarinos.length,
+        escola.criadoEm,
+      ),
       listaBailarinos: c.bailarinos.map((b) => b.bailarino),
     }));
   }
@@ -234,7 +238,11 @@ export class CoreografiaService {
       duracao: c.duracao,
       musica: c.musica,
       temCenario: c.temCenario,
-      valor: calcularValorCoreografia(c.formacao, c.bailarinos.length),
+      valor: calcularValorCoreografia(
+        c.formacao,
+        c.bailarinos.length,
+        independente.criadoEm,
+      ),
       listaBailarinos: c.bailarinos.map((b) => b.bailarino),
     }));
   }

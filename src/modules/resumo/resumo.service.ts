@@ -31,7 +31,11 @@ export class ResumoService {
     let valorCoreografias = 0;
 
     const coreografiasDetalhe = escola.coreografias.map((c) => {
-      const valor = calcularValorCoreografia(c.formacao, c.bailarinos.length);
+      const valor = calcularValorCoreografia(
+        c.formacao,
+        c.bailarinos.length,
+        escola.criadoEm,
+      );
       valorCoreografias += valor;
 
       return {
@@ -110,7 +114,11 @@ export class ResumoService {
     let valorCoreografias = 0;
 
     const coreografiasDetalhe = inscricao.coreografias.map((c) => {
-      const valor = calcularValorCoreografia(c.formacao, c.bailarinos.length);
+      const valor = calcularValorCoreografia(
+        c.formacao,
+        c.bailarinos.length,
+        inscricao.criadoEm,
+      );
       valorCoreografias += valor;
 
       return {
