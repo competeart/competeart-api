@@ -18,7 +18,7 @@ export function buildApp() {
       "https://www.competeartfestival.com.br",
     ],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "x-admin-key"],
+    allowedHeaders: ["Content-Type", "x-admin-key", "x-checkin-key"],
   });
 
   app.register(prismaPlugin);

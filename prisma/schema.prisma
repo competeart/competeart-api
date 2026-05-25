@@ -101,6 +101,7 @@ model CoreografiaBailarino {
   bailarinoId   String
   bailarino     Bailarino    @relation(fields: [bailarinoId], references: [id])
 
+  fezCheckIn    Boolean      @default(false)
   criadoEm      DateTime     @default(now())
 
   @@unique([coreografiaId, bailarinoId])
