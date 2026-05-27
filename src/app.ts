@@ -6,6 +6,7 @@ import { bailarinoRoutes } from "./modules/bailarinos/bailarino.routes";
 import { coreografiaRoutes } from "./modules/coreografias/coreografia.routes";
 import { resumoRoutes } from "./modules/resumo/resumo.routes";
 import { adminRoutes } from "./routes/admin";
+import { cronogramaRoutes } from "./routes/cronograma";
 import { independenteRoutes } from "./modules/independentes/independente.routes";
 
 export function buildApp() {
@@ -30,6 +31,7 @@ export function buildApp() {
   app.register(independenteRoutes);
 
   app.register(adminRoutes);
+  app.register(cronogramaRoutes);
   app.get("/", async () => {
     return { status: "ok" };
   });

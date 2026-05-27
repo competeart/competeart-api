@@ -89,6 +89,8 @@ model Coreografia {
 
   bailarinos     CoreografiaBailarino[]
 
+  ordemCronograma      Int      @default(0)
+  concluidaCronograma  Boolean  @default(false)
   criadoEm       DateTime                @default(now())
 }
 
