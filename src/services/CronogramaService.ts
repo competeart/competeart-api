@@ -1,98 +1,81 @@
-import { PrismaClient } from "@prisma/client";
+import { promises as fs } from "node:fs";
+import path from "node:path";
+
+export type ItemCronograma = {
+  id: string;
+  ordemCronograma: number;
+  nome: string;
+  escola: string;
+  tempo: string;
+  elenco: string;
+  coreografo: string;
+  contexto: string;
+  concluidaCronograma: boolean;
+};
+
+const CAMINHO_CRONOGRAMA =
+  process.env.CRONOGRAMA_JSON_PATH ||
+  path.resolve(process.cwd(), "data", "cronograma.json");
+
+function ordenarCronograma(itens: ItemCronograma[]) {
+  return [...itens].sort((a, b) => a.ordemCronograma - b.ordemCronograma);
+}
+
+async function escreverArquivoCronograma(itens: ItemCronograma[]) {
+  const conteudo = `${JSON.stringify(itens, null, 2)}\n`;
+  const arquivoTemporario = `${CAMINHO_CRONOGRAMA}.tmp`;
+
+  await fs.mkdir(path.dirname(CAMINHO_CRONOGRAMA), { recursive: true });
+  await fs.writeFile(arquivoTemporario, conteudo, "utf8");
+  await fs.rename(arquivoTemporario, CAMINHO_CRONOGRAMA);
+}
 
 export class CronogramaService {
-  constructor(private prisma: PrismaClient) {}
-
   async listar() {
-    const coreografias = await this.prisma.coreografia.findMany({
-      orderBy: [
-        { ordemCronograma: "asc" },
-        { criadoEm: "asc" },
-      ],
-      select: {
-        id: true,
-        nome: true,
-        formacao: true,
-        modalidade: true,
-        categoria: true,
-        ordemCronograma: true,
-        concluidaCronograma: true,
-        escola: {
-          select: {
-            nome: true,
-          },
-        },
-        independente: {
-          select: {
-            nomeResponsavel: true,
-          },
-        },
-        bailarinos: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
+    const conteudo = await fs.readFile(CAMINHO_CRONOGRAMA, "utf8");
+    const itens = JSON.parse(conteudo) as ItemCronograma[];
 
-    return coreografias.map((coreografia) => ({
-      id: coreografia.id,
-      nome: coreografia.nome,
-      formacao: coreografia.formacao,
-      modalidade: coreografia.modalidade,
-      categoria: coreografia.categoria,
-      ordemCronograma: coreografia.ordemCronograma,
-      concluidaCronograma: coreografia.concluidaCronograma,
-      escola: coreografia.escola
-        ? coreografia.escola.nome
-        : `Independente - ${coreografia.independente?.nomeResponsavel ?? "Sem responsável"}`,
-      tipoInscricao: coreografia.escola ? "ESCOLA" : "BAILARINO_INDEPENDENTE",
-      quantidadeBailarinos: coreografia.bailarinos.length,
-    }));
+    return ordenarCronograma(itens);
   }
 
   async reordenar(coreografiasIds: string[]) {
-    const totalCoreografias = await this.prisma.coreografia.count();
-    const totalSelecionadas = await this.prisma.coreografia.count({
-      where: {
-        id: { in: coreografiasIds },
-      },
-    });
+    const itens = await this.listar();
+    const idsExistentes = new Set(itens.map((item) => item.id));
+    const idsRecebidos = new Set(coreografiasIds);
 
     if (
-      totalCoreografias !== coreografiasIds.length ||
-      totalSelecionadas !== coreografiasIds.length
+      coreografiasIds.length !== itens.length ||
+      idsRecebidos.size !== coreografiasIds.length ||
+      coreografiasIds.some((id) => !idsExistentes.has(id))
     ) {
       throw new Error("COREOGRAFIA_INVALIDA");
     }
 
-    await this.prisma.$transaction(
-      coreografiasIds.map((id, index) =>
-        this.prisma.coreografia.update({
-          where: { id },
-          data: { ordemCronograma: index },
-        }),
-      ),
-    );
+    const porId = new Map(itens.map((item) => [item.id, item]));
+    const novaOrdem = coreografiasIds.map((id, index) => ({
+      ...porId.get(id)!,
+      ordemCronograma: index + 1,
+    }));
 
-    return this.listar();
+    await escreverArquivoCronograma(novaOrdem);
+
+    return novaOrdem;
   }
 
   async marcarConclusao(id: string, concluida: boolean) {
-    const coreografia = await this.prisma.coreografia.findUnique({
-      where: { id },
-      select: { id: true },
-    });
+    const itens = await this.listar();
+    const existe = itens.some((item) => item.id === id);
 
-    if (!coreografia) {
+    if (!existe) {
       throw new Error("COREOGRAFIA_NAO_ENCONTRADA");
     }
 
-    await this.prisma.coreografia.update({
-      where: { id },
-      data: { concluidaCronograma: concluida },
-    });
+    const atualizados = itens.map((item) =>
+      item.id === id ? { ...item, concluidaCronograma: concluida } : item,
+    );
 
-    return this.listar();
+    await escreverArquivoCronograma(atualizados);
+
+    return atualizados;
   }
 }

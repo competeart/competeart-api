@@ -1,5 +1,4 @@
 import { FastifyInstance } from "fastify";
-import { PrismaClient } from "@prisma/client";
 import { adminAuth } from "../middlewares/adminAuth";
 import { CronogramaService } from "../services/CronogramaService";
 
@@ -11,7 +10,7 @@ const reordenarCronogramaSchema = {
       coreografiasIds: {
         type: "array",
         minItems: 1,
-        items: { type: "string", format: "uuid" },
+        items: { type: "string", minLength: 1 },
       },
     },
   },
@@ -22,7 +21,7 @@ const marcarConclusaoCronogramaSchema = {
     type: "object",
     required: ["id"],
     properties: {
-      id: { type: "string", format: "uuid" },
+      id: { type: "string", minLength: 1 },
     },
   },
   body: {
@@ -35,10 +34,9 @@ const marcarConclusaoCronogramaSchema = {
 };
 
 export async function cronogramaRoutes(app: FastifyInstance) {
-  const prisma = new PrismaClient();
+  const service = new CronogramaService();
 
   app.get("/cronograma", async () => {
-    const service = new CronogramaService(prisma);
     return service.listar();
   });
 
@@ -47,7 +45,6 @@ export async function cronogramaRoutes(app: FastifyInstance) {
     { preHandler: adminAuth, schema: reordenarCronogramaSchema },
     async (request, reply) => {
       const { coreografiasIds } = request.body as { coreografiasIds: string[] };
-      const service = new CronogramaService(prisma);
 
       try {
         return await service.reordenar(coreografiasIds);
@@ -68,7 +65,6 @@ export async function cronogramaRoutes(app: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params as { id: string };
       const { concluida } = request.body as { concluida: boolean };
-      const service = new CronogramaService(prisma);
 
       try {
         return await service.marcarConclusao(id, concluida);
