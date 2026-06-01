@@ -16,6 +16,11 @@ export type ItemCronograma = {
 const CAMINHO_CRONOGRAMA =
   process.env.CRONOGRAMA_JSON_PATH ||
   path.resolve(process.cwd(), "data", "cronograma.json");
+const CAMINHO_CRONOGRAMA_INICIAL = path.resolve(
+  process.cwd(),
+  "data",
+  "cronograma.json",
+);
 
 function ordenarCronograma(itens: ItemCronograma[]) {
   return [...itens].sort((a, b) => a.ordemCronograma - b.ordemCronograma);
@@ -31,7 +36,25 @@ async function escreverArquivoCronograma(itens: ItemCronograma[]) {
 }
 
 export class CronogramaService {
+  private async garantirArquivoCronograma() {
+    try {
+      await fs.access(CAMINHO_CRONOGRAMA);
+      return;
+    } catch (error: any) {
+      if (error.code !== "ENOENT") {
+        throw error;
+      }
+    }
+
+    const conteudoInicial = await fs.readFile(CAMINHO_CRONOGRAMA_INICIAL, "utf8");
+    const itensIniciais = JSON.parse(conteudoInicial) as ItemCronograma[];
+
+    await escreverArquivoCronograma(itensIniciais);
+  }
+
   async listar() {
+    await this.garantirArquivoCronograma();
+
     const conteudo = await fs.readFile(CAMINHO_CRONOGRAMA, "utf8");
     const itens = JSON.parse(conteudo) as ItemCronograma[];
 
