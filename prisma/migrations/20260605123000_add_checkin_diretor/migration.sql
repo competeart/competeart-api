@@ -1,0 +1,2 @@
+ALTER TABLE "Escola"
+ADD COLUMN "fezCheckInDiretor" BOOLEAN NOT NULL DEFAULT false;

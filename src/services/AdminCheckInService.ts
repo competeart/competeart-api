@@ -9,19 +9,24 @@ interface BuscarParticipantesInput {
 
 interface ParticipanteCheckIn {
   id: string;
-  bailarinoId: string;
+  bailarinoId: string | null;
   nomeCompleto: string;
-  tipoDocumento: TipoDocumento;
+  tipoDocumento: TipoDocumento | "NAO_INFORMADO";
   documento: string;
-  coreografiaId: string;
+  coreografiaId: string | null;
   coreografia: string;
   escola: string;
-  tipoInscricao: "ESCOLA" | "BAILARINO_INDEPENDENTE";
+  tipoInscricao: "ESCOLA" | "BAILARINO_INDEPENDENTE" | "DIRETOR";
   fezCheckIn: boolean;
 }
 
 const LIMITE_PADRAO = 20;
 const LIMITE_MAXIMO = 50;
+const LIMITE_BUSCA_INTERNA = 200;
+
+function criarIdDocumento(tipoDocumento: TipoDocumento, documento: string) {
+  return `documento:${tipoDocumento}:${encodeURIComponent(documento)}`;
+}
 
 export class AdminCheckInService {
   constructor(private prisma: PrismaClient) {}
@@ -34,110 +39,169 @@ export class AdminCheckInService {
   }: BuscarParticipantesInput): Promise<ParticipanteCheckIn[]> {
     const termo = nome.trim();
     const take = Math.min(limite, LIMITE_MAXIMO);
+    const documento = termo.replace(/\D/g, "");
 
     if (termo.length < 2) {
       return [];
     }
 
-    const where: Prisma.CoreografiaBailarinoWhereInput = {
-      bailarino: {
+    const filtrosBusca: Prisma.BailarinoWhereInput[] = [
+      {
         nomeCompleto: {
           contains: termo,
           mode: "insensitive",
         },
       },
-    };
+    ];
 
-    if (checkIn === "FEITO") {
-      where.fezCheckIn = true;
+    if (documento.length >= 2) {
+      filtrosBusca.push({
+        documento: {
+          contains: documento,
+        },
+      });
     }
 
-    if (checkIn === "PENDENTE") {
-      where.fezCheckIn = false;
-    }
-
-    if (escolaId) {
-      where.coreografia = {
-        escolaId,
-      };
-    }
-
-    const participantes = await this.prisma.coreografiaBailarino.findMany({
-      where,
-      take,
-      orderBy: [
-        { fezCheckIn: "asc" },
-        { criadoEm: "asc" },
-      ],
-      select: {
-        id: true,
-        bailarinoId: true,
-        coreografiaId: true,
-        fezCheckIn: true,
-        bailarino: {
-          select: {
-            nomeCompleto: true,
-            tipoDocumento: true,
-            documento: true,
+    const where: Prisma.BailarinoWhereInput = {
+      AND: [
+        { OR: filtrosBusca },
+        {
+          coreografias: {
+            some: {},
           },
         },
-        coreografia: {
+      ],
+    };
+
+    if (escolaId) {
+      where.escolaId = escolaId;
+    }
+
+    const bailarinos = await this.prisma.bailarino.findMany({
+      where,
+      take: LIMITE_BUSCA_INTERNA,
+      orderBy: {
+        nomeCompleto: "asc",
+      },
+      select: {
+        id: true,
+        nomeCompleto: true,
+        tipoDocumento: true,
+        documento: true,
+        escola: {
           select: {
             nome: true,
-            escola: {
+          },
+        },
+        independente: {
+          select: {
+            nomeResponsavel: true,
+          },
+        },
+        coreografias: {
+          orderBy: {
+            criadoEm: "asc",
+          },
+          select: {
+            coreografiaId: true,
+            fezCheckIn: true,
+            coreografia: {
               select: {
                 nome: true,
               },
             },
-            independente: {
-              select: {
-                nomeResponsavel: true,
-              },
-            },
           },
         },
       },
     });
 
-    return participantes.map((participante) => {
-      const escola = participante.coreografia.escola;
-      const independente = participante.coreografia.independente;
+    const participantesBailarinos = [...this.agruparBailarinosPorDocumento(bailarinos)]
+      .filter((participante) => this.filtrarPorStatus(participante, checkIn));
 
-      return {
-        id: participante.id,
-        bailarinoId: participante.bailarinoId,
-        nomeCompleto: participante.bailarino.nomeCompleto,
-        tipoDocumento: participante.bailarino.tipoDocumento,
-        documento: participante.bailarino.documento,
-        coreografiaId: participante.coreografiaId,
-        coreografia: participante.coreografia.nome,
-        escola: escola
-          ? escola.nome
-          : `Independente - ${independente?.nomeResponsavel ?? "Sem responsável"}`,
-        tipoInscricao: escola ? "ESCOLA" : "BAILARINO_INDEPENDENTE",
-        fezCheckIn: participante.fezCheckIn,
-      };
+    const diretores = await this.buscarDiretores({
+      termo,
+      take: LIMITE_BUSCA_INTERNA,
+      checkIn,
+      escolaId,
     });
+
+    return [...participantesBailarinos, ...diretores]
+      .sort((a, b) => {
+        const status = Number(a.fezCheckIn) - Number(b.fezCheckIn);
+        if (status !== 0) return status;
+
+        return a.nomeCompleto.localeCompare(b.nomeCompleto, "pt-BR");
+      })
+      .slice(0, take);
   }
 
   async fazerCheckIn(id: string) {
-    const participante = await this.prisma.coreografiaBailarino.findUnique({
-      where: { id },
-      select: { id: true },
+    if (id.startsWith("diretor:")) {
+      const escolaId = id.replace("diretor:", "");
+      const diretor = await this.prisma.escola.findUnique({
+        where: { id: escolaId },
+        select: { id: true },
+      });
+
+      if (!diretor) {
+        throw new Error("PARTICIPANTE_NAO_ENCONTRADO");
+      }
+
+      await this.prisma.escola.update({
+        where: { id: escolaId },
+        data: { fezCheckInDiretor: true },
+      });
+
+      return {
+        id,
+        fezCheckIn: true,
+      };
+    }
+
+    if (id.startsWith("documento:")) {
+      const [, tipoDocumento, documentoCodificado] = id.split(":");
+      const documento = decodeURIComponent(documentoCodificado ?? "");
+
+      if (
+        !["CPF", "RG"].includes(tipoDocumento) ||
+        !documento
+      ) {
+        throw new Error("PARTICIPANTE_NAO_ENCONTRADO");
+      }
+
+      const resultado = await this.prisma.coreografiaBailarino.updateMany({
+        where: {
+          bailarino: {
+            tipoDocumento: tipoDocumento as TipoDocumento,
+            documento,
+          },
+        },
+        data: { fezCheckIn: true },
+      });
+
+      if (resultado.count === 0) {
+        throw new Error("PARTICIPANTE_NAO_ENCONTRADO");
+      }
+
+      return {
+        id,
+        fezCheckIn: true,
+      };
+    }
+
+    const resultado = await this.prisma.coreografiaBailarino.updateMany({
+      where: { bailarinoId: id },
+      data: { fezCheckIn: true },
     });
 
-    if (!participante) {
+    if (resultado.count === 0) {
       throw new Error("PARTICIPANTE_NAO_ENCONTRADO");
     }
 
-    return this.prisma.coreografiaBailarino.update({
-      where: { id },
-      data: { fezCheckIn: true },
-      select: {
-        id: true,
-        fezCheckIn: true,
-      },
-    });
+    return {
+      id,
+      fezCheckIn: true,
+    };
   }
 
   async listarEscolas() {
@@ -150,5 +214,143 @@ export class AdminCheckInService {
         nome: true,
       },
     });
+  }
+
+  private agruparBailarinosPorDocumento(
+    bailarinos: Array<{
+      id: string;
+      nomeCompleto: string;
+      tipoDocumento: TipoDocumento;
+      documento: string;
+      escola: { nome: string } | null;
+      independente: { nomeResponsavel: string } | null;
+      coreografias: Array<{
+        coreografiaId: string;
+        fezCheckIn: boolean;
+        coreografia: { nome: string };
+      }>;
+    }>,
+  ) {
+    const agrupados = new Map<string, ParticipanteCheckIn & { totalCoreografias: number }>();
+
+    for (const bailarino of bailarinos) {
+      const chave = `${bailarino.tipoDocumento}:${bailarino.documento}`;
+      const registroExistente = agrupados.get(chave);
+      const totalCoreografias = bailarino.coreografias.length;
+      const fezCheckIn =
+        totalCoreografias > 0 &&
+        bailarino.coreografias.every((coreografia) => coreografia.fezCheckIn);
+      const primeiraCoreografia = bailarino.coreografias[0];
+      const tipoInscricao: ParticipanteCheckIn["tipoInscricao"] = bailarino.escola
+        ? "ESCOLA"
+        : "BAILARINO_INDEPENDENTE";
+      const escola = bailarino.escola
+        ? bailarino.escola.nome
+        : `Independente - ${
+            bailarino.independente?.nomeResponsavel ?? "Sem responsável"
+          }`;
+
+      if (!registroExistente) {
+        agrupados.set(chave, {
+          id: criarIdDocumento(bailarino.tipoDocumento, bailarino.documento),
+          bailarinoId: bailarino.id,
+          nomeCompleto: bailarino.nomeCompleto,
+          tipoDocumento: bailarino.tipoDocumento,
+          documento: bailarino.documento,
+          coreografiaId: primeiraCoreografia?.coreografiaId ?? null,
+          coreografia:
+            totalCoreografias === 1
+              ? primeiraCoreografia.coreografia.nome
+              : `${totalCoreografias} coreografias`,
+          escola,
+          tipoInscricao,
+          fezCheckIn,
+          totalCoreografias,
+        });
+        continue;
+      }
+
+      registroExistente.totalCoreografias += totalCoreografias;
+      registroExistente.fezCheckIn = registroExistente.fezCheckIn && fezCheckIn;
+
+      if (registroExistente.escola !== escola) {
+        registroExistente.escola = "Múltiplas inscrições";
+        registroExistente.tipoInscricao = "ESCOLA";
+      }
+
+      registroExistente.coreografia =
+        registroExistente.totalCoreografias === 1
+          ? registroExistente.coreografia
+          : `${registroExistente.totalCoreografias} coreografias`;
+    }
+
+    return [...agrupados.values()].map(({ totalCoreografias, ...participante }) => participante);
+  }
+
+  private filtrarPorStatus(
+    participante: Pick<ParticipanteCheckIn, "fezCheckIn">,
+    checkIn: "TODOS" | "FEITO" | "PENDENTE",
+  ) {
+    if (checkIn === "FEITO") return participante.fezCheckIn;
+    if (checkIn === "PENDENTE") return !participante.fezCheckIn;
+    return true;
+  }
+
+  private async buscarDiretores({
+    termo,
+    take,
+    checkIn,
+    escolaId,
+  }: {
+    termo: string;
+    take: number;
+    checkIn: "TODOS" | "FEITO" | "PENDENTE";
+    escolaId?: string;
+  }): Promise<ParticipanteCheckIn[]> {
+    const where: Prisma.EscolaWhereInput = {
+      nomeDiretor: {
+        contains: termo,
+        mode: "insensitive",
+      },
+    };
+
+    if (escolaId) {
+      where.id = escolaId;
+    }
+
+    if (checkIn === "FEITO") {
+      where.fezCheckInDiretor = true;
+    }
+
+    if (checkIn === "PENDENTE") {
+      where.fezCheckInDiretor = false;
+    }
+
+    const diretores = await this.prisma.escola.findMany({
+      where,
+      take,
+      orderBy: {
+        nomeDiretor: "asc",
+      },
+      select: {
+        id: true,
+        nome: true,
+        nomeDiretor: true,
+        fezCheckInDiretor: true,
+      },
+    });
+
+    return diretores.map((escola) => ({
+      id: `diretor:${escola.id}`,
+      bailarinoId: null,
+      nomeCompleto: escola.nomeDiretor,
+      tipoDocumento: "NAO_INFORMADO",
+      documento: "",
+      coreografiaId: null,
+      coreografia: "Diretor(a)",
+      escola: escola.nome,
+      tipoInscricao: "DIRETOR",
+      fezCheckIn: escola.fezCheckInDiretor,
+    }));
   }
 }
