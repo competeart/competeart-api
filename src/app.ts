@@ -8,6 +8,7 @@ import { resumoRoutes } from "./modules/resumo/resumo.routes";
 import { adminRoutes } from "./routes/admin";
 import { cronogramaRoutes } from "./routes/cronograma";
 import { independenteRoutes } from "./modules/independentes/independente.routes";
+import { instagramRoutes } from "./modules/instagram/instagram.routes";
 
 export function buildApp() {
   const app = Fastify({ logger: true });
@@ -29,6 +30,7 @@ export function buildApp() {
   app.register(coreografiaRoutes);
   app.register(resumoRoutes);
   app.register(independenteRoutes);
+  app.register(instagramRoutes);
 
   app.register(adminRoutes);
   app.register(cronogramaRoutes);
