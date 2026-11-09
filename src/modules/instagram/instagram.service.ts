@@ -6,6 +6,8 @@ interface InstagramMediaApi {
   permalink: string;
   caption?: string;
   timestamp: string;
+  like_count?: number;
+  comments_count?: number;
 }
 
 interface InstagramApiResponse {
@@ -22,6 +24,8 @@ export interface InstagramPost {
   permalink: string;
   caption?: string;
   timestamp: string;
+  likeCount: number;
+  commentsCount: number;
 }
 
 interface InstagramFeed {
@@ -60,12 +64,14 @@ export class InstagramService {
         "permalink",
         "caption",
         "timestamp",
+        "like_count",
+        "comments_count",
       ].join(",");
       const url = new URL(
         `${apiBaseUrl.replace(/\/$/, "")}/${versao}/${usuario}/media`,
       );
       url.searchParams.set("fields", campos);
-      url.searchParams.set("limit", "4");
+      url.searchParams.set("limit", "10");
 
       const response = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -92,10 +98,12 @@ export class InstagramService {
             permalink: media.permalink,
             caption: media.caption,
             timestamp: media.timestamp,
+            likeCount: media.like_count || 0,
+            commentsCount: media.comments_count || 0,
           };
         })
         .filter((item): item is InstagramPost => item !== null)
-        .slice(0, 4);
+        .slice(0, 10);
 
       const feed = { connected: true, username, items };
       cache = { feed, expiraEm: Date.now() + TEMPO_CACHE_MS };
