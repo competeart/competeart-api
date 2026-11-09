@@ -50,6 +50,8 @@ export class InstagramService {
     try {
       const versao = process.env.INSTAGRAM_API_VERSION || "v25.0";
       const usuario = process.env.INSTAGRAM_USER_ID || "me";
+      const apiBaseUrl =
+        process.env.INSTAGRAM_API_BASE_URL || "https://graph.facebook.com";
       const campos = [
         "id",
         "media_type",
@@ -60,7 +62,7 @@ export class InstagramService {
         "timestamp",
       ].join(",");
       const url = new URL(
-        `https://graph.instagram.com/${versao}/${usuario}/media`,
+        `${apiBaseUrl.replace(/\/$/, "")}/${versao}/${usuario}/media`,
       );
       url.searchParams.set("fields", campos);
       url.searchParams.set("limit", "4");
